@@ -61,7 +61,6 @@ function buildScene() {
       // жёлтая картина (шаг 33)
       B.hs.push(hs([27.4, 14.1, 8.4, 14.4], {
         title: "Жёлтая картина с красными каракулями.",
-        click: say("Жёлтая картина с красными каракулями. Выглядит обычно."),
         use: paintingUse
       }));
       if (f.pin) {
@@ -107,8 +106,7 @@ function buildScene() {
       WIN.forEach(w => {
         B.nodes.push(w.svg(artWindow()));
         B.hs.push(hs(w.r(0, 0, 200, 200), {
-          title: "Окно. На рамах сидят птички (большие пуговицы) и лежат яйца (маленькие).",
-          click: say("На оконных рамах — птички (большие пуговицы) и яйца (маленькие). Запомните, где что.")
+          title: "Окно."
         }));
       });
       Object.keys(WINDOW_PATTERN).forEach(k => {
@@ -166,7 +164,7 @@ function buildScene() {
         (f.mapHung ? '<svg x="16" y="16" width="128" height="98" viewBox="0 0 300 200" preserveAspectRatio="none">' + artMap([]) + "</svg>" : "")));
       B.hs.push(hs(EF.r(3, 3, 154, 124), {
         title: f.mapHung ? "Карта мира в раме." : "Пустая рама.", zoom: f.mapHung,
-        click: () => f.mapHung ? go("map") : toast("Пустая рама. Что-то тут должно висеть."),
+        click: () => { if (f.mapHung) go("map"); },
         use: it => {
           if (it === "map" && !f.mapHung) { hangMap(); return true; }
           if (f.mapHung) { go("map"); return "keep"; }
@@ -224,8 +222,6 @@ function buildScene() {
     /* ============ ZOOM: плакат (Морзе) ============ */
     case "poster": {
       B.layers.push(layerImg("poster_zoom.png"));
-      B.hs.push(hs([8, 10, 84, 80], { title: "Узор из точек и тире — один и тот же в каждом квадрате.",
-        click: say("Узор из точек и тире — один и тот же в каждом квадрате. Длинные — тире, короткие — точки.") }));
       break;
     }
 
@@ -238,9 +234,7 @@ function buildScene() {
       B.hs.push(hs([28, 30, 34, 42], {
         title: "Сапог.",
         click: () => {
-          if (f.morse && !f.knife) return toast("На дне сапога лежит нож.");
-          if (S.morseInput.length && !f.morse && !S.lock) { S.morseInput = []; S.bootFill = null; toast("Вылили всё из сапога."); refresh(); return; }
-          toast("Тяжёлый чугунный сапог. На боку — коричневая звезда и жёлтые точки.");
+          if (S.morseInput.length && !f.morse && !S.lock) { S.morseInput = []; S.bootFill = null; toast("Вылили всё из сапога."); refresh(); }
         }
       }));
 
@@ -301,10 +295,9 @@ function buildScene() {
           const p = STAIN_POS[c];
           B.hs.push(hs([p[0] * 100 - 6, p[1] * 100 - 7.5, 12, 15], {
             title: "Тёмное въевшееся пятно.", circle: true,
-            click: say("Тёмное въевшееся пятно. Насухо не оттирается."),
             use: it => {
               if (it === "handkerchief_wet") { stainTap(c); return "keep"; }
-              if (it === "handkerchief_dry") { toast("Сухая салфетка не берёт. Её нужно смочить."); return "keep"; }
+              if (it === "handkerchief_dry") { toast("Пятно не поддаётся."); return "keep"; }
               return false;
             }
           }));
@@ -317,7 +310,7 @@ function buildScene() {
           B.nodes.push(PH.svg(artPhoto()));
           B.hs.push(hs(PH.r(0, 0, 60, 50), {
             title: "В потайном механизме лежит фотография.",
-            click: () => { give("photo"); f.photo = true; toast("Фотография. Её можно рассмотреть в инвентаре."); refresh(); }
+            click: () => { give("photo"); f.photo = true; toast("Фотография."); refresh(); }
           }));
         }
       }
@@ -329,8 +322,6 @@ function buildScene() {
       backdrop(B);
       const C = cropBox("bed_zoom.png", 0, 0.33, 0, 33.5, 100);
       B.nodes.push(C);
-      B.hs.push(hs([0, 33.5, 100, 33], { title: "Цветные человечки держатся за руки.",
-        click: say("Человечки держатся за руки… Запомните порядок цветов слева направо.") }));
       break;
     }
 
@@ -348,7 +339,6 @@ function buildScene() {
           const c = i % 4, r = Math.floor(i / 4);
           const cell = el("qcell", "left:" + colEdge[c] + "%;top:" + rowEdge[r] + "%;width:" + (colEdge[c + 1] - colEdge[c]) + "%;height:" + (rowEdge[r + 1] - rowEdge[r]) + "%");
           cell.dataset.drop = ""; cell.dataset.cell = i;
-          cell.title = "Ячейка одеяла";
           cell.addEventListener("click", () => { if (!S.lock && S.quiltBeads[i]) { delete S.quiltBeads[i]; Audio2.click(); quiltChanged(); } });
           C.appendChild(cell);
         }
@@ -367,15 +357,14 @@ function buildScene() {
         });
         // лоток с бусинами
         const tray = el("abs tray", "left:22%;top:72%;width:56%;height:20%");
-        [["big", "большая бусина"], ["small", "маленькая бусина"]].forEach(([kind, label]) => {
-          const b = el("bead tray-bead " + kind, "", beadSVG(kind) + "<span>" + label + "</span>");
+        ["big", "small"].forEach(kind => {
+          const b = el("bead tray-bead " + kind, "", beadSVG(kind));
           makeDrag(b, {
             onDrop: t => { if (t && t.dataset.cell !== undefined) { S.quiltBeads[+t.dataset.cell] = kind; quiltChanged(); } }
           });
           tray.appendChild(b);
         });
         B.nodes.push(tray);
-        B.nodes.push(el("abs capt", "left:0;top:12%;width:100%", "Перетащите бусины в ячейки одеяла."));
       } else {
         const C = cropBox("bed_zoom_open.png", 0.34, 1, 0, 17, 100);
         B.nodes.push(C);
@@ -385,11 +374,9 @@ function buildScene() {
           if (S.__cutting) bunny.insertAdjacentHTML("beforeend", '<svg class="slashfx" viewBox="0 0 100 100" preserveAspectRatio="none">' + artSlash() + "</svg>");
           C.appendChild(bunny);
           C.appendChild(hotspot({
-            r: [38, 22, 24, 62], title: "Тряпичный зайчик.", click: say("Тряпичный зайчик. Он нужен на месте — не берётся."),
+            r: [38, 22, 24, 62], title: "Тряпичный зайчик.",
             use: it => { if (it === "knife") { cutBunny(); return true; } return false; }
           }));
-        } else {
-          C.appendChild(el("abs capt", "left:0;top:46%;width:100%", "Под одеялом больше ничего нет."));
         }
       }
       break;
@@ -402,11 +389,11 @@ function buildScene() {
       const plant = PF.svg(artPlant({ planted: f.planted, grown: f.grown, cut: f.cut, broken: f.brokenOff }), S.__justGrew ? "growing" : "");
       B.nodes.push(plant);
       if (!f.planted) {
-        B.hs.push(hs(PF.r(20, 96, 60, 50), { title: "Горшок с рыхлой землёй.", click: say("Горшок с рыхлой землёй. В него бы что-нибудь посадить."), use: potUse }));
+        B.hs.push(hs(PF.r(20, 96, 60, 50), { title: "Горшок с рыхлой землёй.", use: potUse }));
       } else if (!f.grown) {
-        B.hs.push(hs(PF.r(20, 70, 60, 76), { title: "Из земли торчит бледный росток.", click: say("Из земли торчит бледный росток. Ему бы питания…"), use: potUse }));
+        B.hs.push(hs(PF.r(20, 70, 60, 76), { title: "Росток.", use: potUse }));
       } else if (!f.cut) {
-        B.hs.push(hs(PF.r(8, 8, 84, 138), { title: "Пышный мистический цветок.", click: say("Пышный цветок на толстом стебле."), use: potUse }));
+        B.hs.push(hs(PF.r(8, 8, 84, 138), { title: "Цветок.", use: potUse }));
       } else if (!f.brokenOff) {
         B.hs.push(hs(PF.r(8, 8, 84, 138), { title: "Надрезанный цветок.", click: breakFlower, use: potUse }));
       } else {
@@ -414,9 +401,7 @@ function buildScene() {
         if (!f.sap) {
           B.nodes.push(el("abs sap", "left:" + (p[0] - 3) + "%;top:" + (p[1] - 1) + "%;width:6%;height:20%",
             '<svg viewBox="0 0 40 120" preserveAspectRatio="none"><path class="o" d="M20 2 Q30 30 28 60 Q34 100 20 116 Q6 100 12 60 Q10 30 20 2 Z" fill="#9ccf4a"/><ellipse cx="16" cy="40" rx="3" ry="10" fill="#d8f08a" opacity=".8"/></svg>'));
-          B.hs.push(hs([p[0] - 6, p[1] - 2, 12, 24], { title: "Из излома капает густой сок.", click: say("Густой сок капает на землю. Подставить бы стакан."), use: potUse }));
-        } else {
-          B.nodes.push(el("abs capt", "left:0;top:90%;width:100%", "Сок больше не капает."));
+          B.hs.push(hs([p[0] - 6, p[1] - 2, 12, 24], { title: "Капающий сок.", use: potUse }));
         }
       }
       break;
@@ -437,7 +422,7 @@ function buildScene() {
           dn.textContent = "▼"; dn.classList.add("arrow");
           B.hs.push(up, dn);
         }
-        B.hs.push(hs(FZ.r(12, 70, 126, 114), { title: "Дверца мини-холодильника.", click: say("Дверца не открывается — на ней кодовый замок из четырёх букв.") }));
+        B.hs.push(hs(FZ.r(12, 70, 126, 114), { title: "Дверца мини-холодильника.", click: say("Дверца не открывается.") }));
       } else {
         const FI = Frame(300, 240, 14, 8, 72);
         B.nodes.push(FI.svg(artFridgeInside({ ice: f.ice, glass: f.glass, aniline: f.aniline })));
@@ -445,7 +430,6 @@ function buildScene() {
         if (!f.glass) B.hs.push(hs(FI.r.apply(null, FRIDGE_IN.glass), { title: "Пустой гранёный стакан.", click: () => { give("glass_empty"); f.glass = true; toast("Пустой стакан."); refresh(); } }));
         B.hs.push(hs(FI.r.apply(null, FRIDGE_IN.meat), {
           title: f.aniline ? "Кусок мяса. Налёт соскоблен." : "Кусок красного мяса, покрытый странным химическим налётом.",
-          click: say(f.aniline ? "Мясо как мясо. Налёта больше нет." : "Мясо покрыто химическим налётом. Чем бы его соскоблить…"),
           use: meatUse
         }));
       }
@@ -459,7 +443,7 @@ function buildScene() {
       B.nodes.push(PZ.svg(artPhono(f.phono, S.lock && f.phono && !f.teaFell)));
       if (!f.phono) {
         B.hs.push(hs(PZ.r(40, 100, 82, 34), {
-          title: "Пустая люлька — будто под валик.", click: say("Пустая люлька для валика."),
+          title: "Люлька для валика.",
           use: it => { if (it === "roller") { rollerIn(); return true; } return false; }
         }));
       } else if (!f.tea) {
@@ -481,14 +465,11 @@ function buildScene() {
       const MZ = Frame(100, 150, 34, 6, 32);
       B.nodes.push(MZ.svg(artMixer({ glass: f.mixGlass, done: f.mixDone, mixing: S.__mixing })));
       B.hs.push(hs(MZ.r(8, 6, 84, 142), {
-        title: "Смеситель.", use: mixerUse,
-        click: say(f.mixGlass ? "Смеситель ждёт ингредиенты." : "Смеситель. Сюда ставят стакан.")
+        title: "Смеситель.", use: mixerUse
       }));
       if (f.mixGlass) B.hs.push(hs(MZ.r(26, 30, 48, 72), {
         title: f.mixDone ? "Стакан с питательной смесью." : "Стакан в смесителе.", use: mixerUse, click: mixerGlassClick
       }));
-      B.nodes.push(el("abs capt", "left:0;top:80%;width:100%", f.mixDone ? "Смесь готова — кликните по стакану." :
-        f.mixGlass ? "Применяйте предметы из инвентаря на смеситель." : "Поставьте пустой стакан: выберите его в инвентаре и кликните по смесителю."));
       break;
     }
 
@@ -506,18 +487,18 @@ function buildScene() {
       const R = mirrorPt(VARYA_EAR_R), L = mirrorPt(VARYA_EAR_L), K = mirrorPt(VARYA_CHEEK);
       if (st === 0 || reset) {
         B.hs.push(hs(MZ.r(R[0] - 7, R[1] - 9, 13, 18), {
-          title: "Правое ухо Вари.", click: say("Ухо Вари."),
+          title: "Правое ухо Вари.",
           use: it => { if (it === "broken_flower" && !reset) { flowerOnEar(); return true; } return false; }
         }));
         B.hs.push(hs(MZ.r(L[0] - 7, L[1] - 9, 13, 18), {
-          title: "Левое ухо Вари.", click: say("Ухо Вари."),
-          use: it => { if (it === "broken_flower" && !reset) { toast("Не так, как на портрете. Цветок соскальзывает."); return "keep"; } return false; }
+          title: "Левое ухо Вари.",
+          use: it => { if (it === "broken_flower" && !reset) { toast("Цветок соскальзывает."); return "keep"; } return false; }
         }));
       }
       if (reset && !f.map) {
         B.hs.push(hs(MZ.r(K[0] - 8, K[1] - 7, 16, 14), {
           title: f.hole ? "Дыра в щеке. Оттуда торчит карта." : "Синяк на щеке Вари.", circle: true,
-          click: () => { if (f.hole) { give("map"); f.map = true; toast("Географическая карта."); refresh(); } else toast("Свежий синяк. Нужно что-нибудь холодное."); },
+          click: () => { if (f.hole) { give("map"); f.map = true; toast("Географическая карта."); refresh(); } },
           use: bruiseUse
         }));
       }
@@ -536,7 +517,7 @@ function buildScene() {
       backdrop(B);
       const PV = Frame(100, 130, 30, 7, 40);
       B.nodes.push(PV.svg(artPortrait()));
-      B.hs.push(hs(PV.r(10, 10, 80, 110), { title: "Портрет Вари.", click: say("На портрете у Вари за ухом цветок — с той же стороны, что и ваше правое.") }));
+      B.hs.push(hs(PV.r(10, 10, 80, 110), { title: "Портрет Вари." }));
       break;
     }
 
@@ -568,7 +549,6 @@ function buildScene() {
         B.nodes.push(note, WR.svg(artWire()));
         B.hs.push(hs(WR.r(0, 0, 60, 50), { title: "На листке лежит провод.", click: () => { give("wire"); f.wire = true; toast("Провод."); refresh(); } }));
       } else B.nodes.push(note);
-      B.nodes.push(el("abs capt", "left:0;top:88%;width:100%", "Кликните по клетке строки или перетащите фишку."));
       break;
     }
 
@@ -578,13 +558,12 @@ function buildScene() {
       const PZ = Frame(200, 120, 20, 14, 60);
       B.nodes.push(PZ.svg(artProjector(f.projectorWired, f.projectorOpen, !f.key)));
       B.hs.push(hs(PZ.r(10, 20, 186, 96), {
-        title: "Прожектор.", use: projectorUse,
-        click: say(f.projectorWired ? "Прожектор гудит. На корпусе — люк." : "Провод оборван — искрит. Нужен новый.")
+        title: "Прожектор.", use: projectorUse
       }));
       if (f.projectorWired && !f.projectorOpen) {
-        B.hs.push(hs(PZ.r.apply(null, PROJ_HATCH), { title: "Люк на корпусе.", click: () => { f.projectorOpen = true; Audio2.thud(); toast("Люк открылся — внутри лежит клавиша."); refresh(); } }));
+        B.hs.push(hs(PZ.r.apply(null, PROJ_HATCH), { title: "Люк на корпусе.", click: () => { f.projectorOpen = true; Audio2.thud(); toast("Люк открылся."); refresh(); } }));
       } else if (f.projectorOpen && !f.key) {
-        B.hs.push(hs(PZ.r(PROJ_HATCH[0] + 6, PROJ_HATCH[1] + 8, 38, 26), { title: "Клавиша.", click: () => { give("key"); f.key = true; toast("Клавиша от выключателя."); refresh(); } }));
+        B.hs.push(hs(PZ.r(PROJ_HATCH[0] + 6, PROJ_HATCH[1] + 8, 38, 26), { title: "Клавиша.", click: () => { give("key"); f.key = true; toast("Клавиша."); refresh(); } }));
       }
       break;
     }
@@ -596,7 +575,7 @@ function buildScene() {
       B.nodes.push(SZ.svg(artSwitch(f.switchFixed, !f.lightOff)));
       B.hs.push(hs(SZ.r(6, 4, 48, 82), {
         title: "Сломанный выключатель.", use: switchUse,
-        click: () => f.switchFixed ? toggleLight() : toast("Из гнезда торчат провода. Не хватает клавиши.")
+        click: () => { if (f.switchFixed) toggleLight(); }
       }));
       break;
     }
@@ -606,8 +585,7 @@ function buildScene() {
       backdrop(B);
       B.nodes.push(MAP_FRAME.svg(artMap(S.pinMarks), "map-art"));
       B.hs.push(hs(MAP_FRAME.r(0, 0, 300, 200), {
-        title: "Карта мира.", use: mapUse,
-        click: say("Карта мира. Маяк, мельница, пирамида… Вспомните фотографию.")
+        title: "Карта мира.", use: mapUse
       }));
       break;
     }

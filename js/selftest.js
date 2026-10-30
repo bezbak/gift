@@ -15,7 +15,7 @@ async function selfTest() {
 
   const nodes = () => [...document.querySelectorAll("#scene .hs")];
   const view = v => { S.view = v; if (WALLS.includes(v)) S.wallIndex = WALLS.indexOf(v); refresh(); };
-  const find = t => { const n = nodes().find(d => d.title.includes(t)); if (!n) throw new Error("нет зоны «" + t + "» в виде " + S.view); return n; };
+  const find = t => { const n = nodes().find(d => d.dataset.name.toLowerCase().includes(t.toLowerCase())); if (!n) throw new Error("нет зоны «" + t + "» в виде " + S.view); return n; };
   const press = (n, fx, fy) => {
     const r = n.getBoundingClientRect();
     n.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: r.left + r.width * (fx === undefined ? .5 : fx), clientY: r.top + r.height * (fy === undefined ? .5 : fy) }));
@@ -23,7 +23,8 @@ async function selfTest() {
   const click = (v, t) => { view(v); press(find(t)); };
   const useOn = (v, t, item, fx, fy) => {
     assert(has(item), "в инвентаре нет «" + item + "»");
-    view(v); S.selected = item; press(find(t), fx, fy); S.selected = null;
+    view(v); S.selected = item;
+    try { press(find(t), fx, fy); } finally { S.selected = null; }     // не оставлять предмет «в руке» при ошибке
   };
   const idle = async () => { for (let i = 0; i < 800 && S.lock; i++) await new Promise(r => setTimeout(r, 5)); assert(!S.lock, "анимация зависла"); };
   const tick = () => new Promise(r => setTimeout(r, 20));
@@ -58,11 +59,11 @@ async function selfTest() {
   });
   await step("6. холодильник: неверный код не открывает; ДИТЯ → лёд и стакан", () => {
     view("fridge");
-    press(nodes().filter(n => n.title === "Дальше по алфавиту")[0]);
+    press(nodes().filter(n => n.dataset.name === "Дальше по алфавиту")[0]);
     assert(!S.f.fridgeOpen && fridgeWord() === "БААА", "неверный код не должен открывать, код: " + fridgeWord());
     for (let i = 0; i < 4; i++) {
       for (let guard = 0; guard < 40 && ALPHABET[S.fridgeCode[i]] !== FRIDGE_CODE[i]; guard++) {
-        view("fridge"); press(nodes().filter(n => n.title === "Дальше по алфавиту")[i]);
+        view("fridge"); press(nodes().filter(n => n.dataset.name === "Дальше по алфавиту")[i]);
       }
     }
     assert(S.f.fridgeOpen, "замок не открылся, код: " + fridgeWord());
@@ -92,7 +93,7 @@ async function selfTest() {
     await drag(document.querySelector(".tray-bead.big"), document.querySelector('.qcell[data-cell="0"]'));
     assert(S.quiltBeads[0] === "big" && !S.f.quilt, "перетаскивание не сработало");
     // вернуть бусину перетаскиванием за пределы
-    await drag(document.querySelector(".bead.placed"), document.querySelector(".capt"));
+    await drag(document.querySelector(".bead.placed"), document.querySelector(".tray"));
     assert(!S.quiltBeads[0], "бусина не убралась");
   });
   await step("14. бусины: перетаскиваем по рисунку окон → одеяло поднимается", async () => {
@@ -125,9 +126,9 @@ async function selfTest() {
   await step("18. смесь → горшок: цветок вырос, стакан снова пуст", () => {
     useOn("pot", "росток", "glass_mix"); assert(S.f.grown && has("glass_empty") && !has("glass_mix"), "цветок не вырос");
   });
-  await step("19. нож → надрез", () => { useOn("pot", "Пышный", "knife"); assert(S.f.cut, "нет надреза"); });
+  await step("19. нож → надрез", () => { useOn("pot", "Цветок.", "knife"); assert(S.f.cut, "нет надреза"); });
   await step("20. рука: отломить верхушку → капает сок", () => { click("pot", "Надрезанный"); assert(has("broken_flower") && S.f.brokenOff, "не отломилось"); });
-  await step("21. пустой стакан → сок", () => { useOn("pot", "капает", "glass_empty"); assert(has("glass_sap"), "нет сока"); });
+  await step("21. пустой стакан → сок", () => { useOn("pot", "сок", "glass_empty"); assert(has("glass_sap"), "нет сока"); });
 
   /* ---- 22-23. салфетка ---- */
   await step("22. сухая салфетка за ножками кровати", () => { click("wall0", "белеет"); assert(has("handkerchief_dry"), "нет салфетки"); });

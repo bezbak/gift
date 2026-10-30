@@ -130,7 +130,7 @@ function hotspot(o) {
   d.className = "hs" + (o.zoom ? " zoomable" : "") + (o.circle ? " circle" : "");
   d.style.left = o.r[0] + "%"; d.style.top = o.r[1] + "%";
   d.style.width = o.r[2] + "%"; d.style.height = o.r[3] + "%";
-  d.title = o.title || "";
+  d.dataset.name = o.title || "";      // имя зоны нужно только автотесту — игроку не показываем
   d.addEventListener("click", e => {
     e.stopPropagation();
     if (S.lock) return;
@@ -143,7 +143,6 @@ function hotspot(o) {
       else { toast("Ничего не происходит."); }
     } else {
       if (o.click) o.click(e);
-      else if (o.title) toast(o.title);
     }
   });
   return d;
@@ -203,7 +202,7 @@ async function morseTap(sym) {
     S.lock = true; Audio2.bad(); shakeScene();
     await wait(1000);
     S.morseInput = []; S.bootFill = null; S.lock = false;
-    toast("Не тот порядок — жижа сама стекла со дна.");
+    toast("Жижа сама стекла со дна.");
     refresh(); return;
   }
   if (morseDone(S.morseInput)) {                  // верно: вся жижа исчезает
@@ -224,7 +223,7 @@ function fridgeTurn(i, d) {
   Audio2.click();
   if (fridgeWord() === FRIDGE_CODE) {
     S.f.fridgeOpen = true; Audio2.good();
-    toast("Щёлк — замок открылся. Внутри лёд, стакан и кусок мяса.");
+    toast("Щёлк — замок открылся.");
   }
   refresh();
 }
@@ -283,12 +282,12 @@ function mixerUse(it) {
   if (!f.mixGlass) {
     if (it === "glass_empty" && !f.mixDone) {
       take("glass_empty"); f.mixGlass = true; Audio2.click();
-      toast("Стакан встал под смеситель. Теперь можно что-нибудь положить.");
+      toast("Стакан встал под смеситель.");
       refresh(); return true;
     }
     return bounce(it);
   }
-  if (f.mixDone) { toast("Смесь готова — заберите стакан."); return "keep"; }
+  if (f.mixDone) { toast("Смесь готова."); return "keep"; }
   if (MIX_ITEMS.includes(it) && !f.mix[it]) {
     take(it); f.mix[it] = true; Audio2.pour();
     if (MIX_ITEMS.every(k => f.mix[k])) runMixer();
@@ -312,7 +311,7 @@ function mixerGlassClick() {
   } else if (!MIX_ITEMS.some(k => f.mix[k])) {
     f.mixGlass = false; give("glass_empty"); toast("Пустой стакан."); refresh();
   } else {
-    toast("Стакан зажат — ждёт остальных ингредиентов.");
+    toast("Стакан не вынуть.");
   }
 }
 
@@ -349,7 +348,7 @@ function breakFlower() {
 function stainTap(c) {
   const idx = S.stainInput.length;
   if (c !== STAIN_ORDER[idx]) {
-    Audio2.bad(); shakeScene(); toast("Не тот порядок — пятна проступили снова.");
+    Audio2.bad(); shakeScene(); toast("Пятна проступили снова.");
     S.stainInput = []; refresh(); return;
   }
   S.stainInput.push(c); Audio2.click();
@@ -380,12 +379,12 @@ async function openDoor() {
   await wait(900);
   await fadeBlack(0, 1500);
   S.lock = false;
-  toast("Всё вернулось на места. Но в зеркале с Варей что-то не так.");
+  toast("Всё вернулось на свои места.");
 }
 function bruiseUse(it) {
   if (it === "ice" && !S.f.hole) {
     take("ice"); S.f.hole = true; Audio2.crack(); flashFX();
-    toast("Лёд растаял — на месте синяка зияет дыра. Там что-то свёрнуто в трубочку.");
+    toast("Лёд растаял — на месте синяка зияет дыра.");
     refresh(); return true;
   }
   return false;
@@ -412,28 +411,28 @@ async function tableMove(row, col) {
 function projectorUse(it) {
   if (it === "wire" && !S.f.projectorWired) {
     take("wire"); S.f.projectorWired = true; Audio2.good();
-    toast("Провод встал на место — прожектор загудел. На корпусе есть люк."); refresh(); return true;
+    toast("Прожектор загудел."); refresh(); return true;
   }
   return false;
 }
 function switchUse(it) {
   if (it === "key" && !S.f.switchFixed) {
     take("key"); S.f.switchFixed = true; Audio2.click();
-    toast("Клавиша встала в выключатель. Теперь он работает."); refresh(); return true;
+    toast("Клавиша встала на место."); refresh(); return true;
   }
   return false;
 }
 function toggleLight() {
-  if (!S.f.switchFixed) { toast("Выключатель сломан — не хватает клавиши."); return; }
+  if (!S.f.switchFixed) { toast("Выключатель не работает."); return; }
   S.f.lightOff = !S.f.lightOff; Audio2.thud(); refresh();
-  toast(S.f.lightOff ? "Свет погас. Прожектор высветил угол картины на стене с кроватью." : "Свет включился.");
+  toast(S.f.lightOff ? "Свет погас." : "Свет включился.");
 }
 function paintingUse(it) {
   const f = S.f;
   if (it !== "knife") return false;
   if (f.pin)         { toast("Картина уже разрезана."); return "keep"; }
-  if (!f.switchFixed) { toast("Резать картину? Незачем — это просто картина."); return "keep"; }
-  if (!f.lightOff)   { toast("При этом свете это просто картина с красными каракулями. Нужен другой свет."); return "keep"; }
+  if (!f.switchFixed) { toast("Нож здесь ни к чему."); return "keep"; }
+  if (!f.lightOff)   { toast("Нож здесь ни к чему."); return "keep"; }
   f.pin = true; give("pin"); Audio2.snip(); flashFX();
   toast("Из-под холста выпала булавка!");
   f.lightOff = false;           // свет возвращается сам
@@ -472,7 +471,7 @@ function tryCombine(a, b) {
 function showPhoto() {
   const v = document.createElement("div");
   v.className = "viewer";
-  v.innerHTML = '<div class="photo">' + photoSVG() + '<div class="cap">кликните, чтобы убрать</div></div>';
+  v.innerHTML = '<div class="photo">' + photoSVG() + "</div>";
   v.addEventListener("click", () => v.remove());
   stage.appendChild(v);
 }

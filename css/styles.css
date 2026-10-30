@@ -124,14 +124,6 @@ body {
   box-shadow: 0 0 40px rgba(0, 0, 0, .65);
 }
 
-.capt {
-  text-align: center;
-  color: #efe3c8;
-  font-size: calc(var(--gw) / 62);
-  text-shadow: 0 1px 3px #000, 0 0 8px #000;
-  padding: 0 6%;
-}
-
 /* ---- Hotspots ---- */
 .hs {
   position: absolute;
@@ -497,8 +489,7 @@ body {
 .tray {
   display: flex;
   justify-content: space-around;
-  align-items: flex-end;
-  padding-bottom: 2%;
+  align-items: center;
   background: rgba(10, 8, 6, .55);
   border-radius: 14px;
 }
@@ -509,8 +500,6 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  color: #e9dcc3;
-  font-size: calc(var(--gw) / 70);
 }
 
 .tray .bead.big svg {
@@ -826,13 +815,6 @@ body {
 .photo svg {
   width: 100%;
   display: block;
-}
-
-.photo .cap {
-  text-align: center;
-  color: #7a6a48;
-  font-size: 12px;
-  margin-top: 8px;
 }
 
 /* ---- Финальная сцена ---- */
