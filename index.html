@@ -10,35 +10,40 @@
 
 <body>
   <div id="app">
-    <div id="stage">
-      <div id="scene"></div>
-      <div id="fx"></div>
-      <div class="nav" id="navL">‹</div>
-      <div class="nav" id="navR">›</div>
-      <button id="backBtn" class="hidden">← назад</button>
-      <button id="hintBtn" title="Подсказка">?</button>
-      <div id="toast"></div>
+    <div id="game">
+      <div id="stage">
+        <div id="scene"></div>
+        <div id="fx"></div>
+        <div class="nav" id="navL">‹</div>
+        <div class="nav" id="navR">›</div>
+        <button id="backBtn" class="hidden">← назад</button>
+        <button id="hintBtn" title="Подсказка">?</button>
+        <div id="toast"></div>
+
+        <div class="screen" id="startScreen">
+          <h1>КОМНАТА&nbsp;1</h1>
+          <p>Point-and-click квест в духе Rusty Lake. Осмотритесь по четырём стенам, собирайте предметы,
+            комбинируйте их и решайте головоломки. Кликните по предмету в инвентаре, чтобы взять его «в руку»,
+            затем кликните по объекту сцены.</p>
+          <button class="btn" id="startBtn">Войти</button>
+        </div>
+
+        <div class="screen hidden" id="endScreen">
+          <h1>Комната&nbsp;1 пройдена</h1>
+          <p id="endText"></p>
+          <button class="btn" id="againBtn">Заново</button>
+        </div>
+      </div>
       <div id="bar"></div>
-
-      <div class="screen" id="startScreen">
-        <h1>КОМНАТА&nbsp;1</h1>
-        <p>Point-and-click квест в духе Rusty Lake. Осмотритесь по четырём стенам, собирайте предметы,
-          комбинируйте их и решайте головоломки. Кликните по предмету в инвентаре, чтобы взять его «в руку»,
-          затем кликните по объекту сцены.</p>
-        <button class="btn" id="startBtn">Войти</button>
-      </div>
-
-      <div class="screen hidden" id="endScreen">
-        <h1>Комната&nbsp;1 пройдена</h1>
-        <p id="endText"></p>
-        <button class="btn" id="againBtn">Заново</button>
-      </div>
     </div>
   </div>
 
-  <!-- Порядок важен: модели -> функции -> запуск -->
+  <!-- Порядок важен: модели -> функции -> графика -> виды -> автотест -> запуск -->
   <script src="js/models.js"></script>
   <script src="js/functions.js"></script>
+  <script src="js/art.js"></script>
+  <script src="js/scenes.js"></script>
+  <script src="js/selftest.js"></script>
   <script src="js/main.js"></script>
 </body>
 

@@ -3,7 +3,8 @@
    МОДЕЛИ — данные и состояние игры (без DOM и без логики)
    -----------------------------------------------------------------------------
    Всё, что описывает КОНТЕНТ комнаты: предметы, головоломки, стартовое
-   состояние. Загружается первым. Логика (js/functions.js) читает эти структуры.
+   состояние. Загружается первым. Логика (js/functions.js) и описания видов
+   (js/scenes.js) читают эти структуры.
 
    Как расширять:
    - новый предмет  -> добавить запись в ITEMS
@@ -16,55 +17,98 @@ const IMG = "assets/images/";
 
 /* -----------------------------------------------------------------------------
    ПРЕДМЕТЫ ИНВЕНТАРЯ
-   id -> { name, img? }.  Если img задан — иконка берётся из assets/images/,
-   иначе рисуется текстовый «чип» (см. shortName в functions.js).
+   id -> { name, short, icon? | img?, filter?, look? }
+   Если задан img — иконка берётся из assets/images/, иначе рисуется emoji-чип.
+   look:true — по клику предмет не берётся «в руку», а открывается для осмотра.
    --------------------------------------------------------------------------- */
 const ITEMS = {
-  knife:            { name: "Нож" },
-  glass_empty:      { name: "Пустой стакан" },
-  glass_mix:        { name: "Стакан с питательной смесью" },
-  glass_sap:        { name: "Стакан с соком цветка" },
-  aniline:          { name: "Анилин" },
-  roller:           { name: "Малярный валик" },
-  tea:              { name: "Чай «Золотой лепесток»" },
-  bulb:             { name: "Луковица мистического цветка" },
-  toy:              { name: "Тряпичная игрушка" },
-  heart:            { name: "Анатомическое сердце" },
-  broken_flower:    { name: "Надломленный цветок" },
-  handkerchief_dry: { name: "Сухая салфетка", img: "handkerchief.png" },
-  handkerchief_wet: { name: "Мокрая салфетка", img: "handkerchief.png" },
-  screwdriver:      { name: "Отвёртка", img: "screwdriver.png" },
-  button:           { name: "Странная пуговица", img: "button.png" },
+  knife:            { name: "Нож",                          short: "нож",      icon: "🔪" },
+  glass_empty:      { name: "Пустой стакан",                short: "стакан",   icon: "🥛" },
+  glass_mix:        { name: "Стакан с питательной смесью",  short: "смесь",    icon: "🥤" },
+  glass_sap:        { name: "Стакан с соком цветка",        short: "сок",      icon: "🧃" },
+  ice:              { name: "Кусочки льда",                 short: "лёд",      icon: "🧊" },
+  aniline:          { name: "Анилин",                       short: "анилин",   icon: "🧪" },
+  roller:           { name: "Валик",                        short: "валик",    icon: "🥫" },
+  tea:              { name: "Чай «Золотой лепесток»",       short: "чай",      icon: "🍵" },
+  bulb:             { name: "Луковица мистического цветка (орхидея)", short: "луковица", icon: "🧅" },
+  heart:            { name: "Анатомическое сердце",         short: "сердце",   icon: "❤️" },
+  broken_flower:    { name: "Надломленный цветок",          short: "цветок",   icon: "🌺" },
+  handkerchief_dry: { name: "Сухая салфетка",               short: "салфетка", img: "handkerchief.png" },
+  handkerchief_wet: { name: "Мокрая салфетка",              short: "мокрая",   img: "handkerchief.png", filter: "hue-rotate(70deg) saturate(1.8) brightness(.78)" },
+  photo:            { name: "Фотография",                   short: "фото",     icon: "🖼️", look: true },
+  puzzle:           { name: "Кусочки цветка-пазла",         short: "пазл",     icon: "🧩" },
+  map:              { name: "Географическая карта",         short: "карта",    icon: "🗺️" },
+  wire:             { name: "Провод",                       short: "провод",   icon: "🔌" },
+  key:              { name: "Клавиша",                      short: "клавиша",  icon: "🔘" },
+  pin:              { name: "Булавка",                      short: "булавка",  icon: "📌" },
 };
 
 /* -----------------------------------------------------------------------------
-   ГОЛОВОЛОМКА 1 — Морзе (рамка картины -> заливка жижи в сапог)
+   ГОЛОВОЛОМКА 1 — Морзе (плакат -> заливка жижи в сапог)
    Жёлтая жижа = точка (dot), коричневая = тире (dash).
+   На плакате левые квадранты читаются  — · · — · —,  правые — зеркально
+   (— · — · · —). Засчитываем оба направления.
    --------------------------------------------------------------------------- */
-const MORSE = ["dot", "dot", "dash", "dot"];        // · · — ·  (буква «F»)
-const MORSE_JAR = { dot: "yellow", dash: "brown" };
+const MORSE = ["dash", "dot", "dot", "dash", "dot", "dash"];
+const MORSE_CODES = [MORSE, MORSE.slice().reverse()];
+const MORSE_FILL = { dot: "yellow", dash: "brown" };
 
 /* -----------------------------------------------------------------------------
-   ГОЛОВОЛОМКА 2 — память (птицы на окнах -> грид одеяла)
-   Сетка 4 столбца x 2 строки, ячейки 0..7 (row-major).
-   Птицы сидят в BIRD_CELLS; нажимать нужно по возрастанию индекса.
+   ГОЛОВОЛОМКА 2 — код холодильника (нацарапан на открытом ящике тумбочки)
    --------------------------------------------------------------------------- */
-const BIRD_CELLS = [1, 3, 4, 6];
-const BIRD_COLORS = { 1: "#d64b4b", 3: "#4b6fd6", 4: "#48b04b", 6: "#e8c93c" };
+const FRIDGE_CODE = "ДИТЯ";
+const ALPHABET = "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
 
 /* -----------------------------------------------------------------------------
-   ГОЛОВОЛОМКА 3 — пятна (подсказка на изголовье -> крышка тумбочки)
-   Порядок очистки мокрой салфеткой + положение каждого пятна в зум-виде
-   (доля ширины/высоты).
+   ГОЛОВОЛОМКА 3 — память (птицы/яйца на окнах -> бусины на одеяле)
+   Сетка 4 столбца x 2 строки, ячейки 0..7 (row-major). Левое окно = столбцы 0-1,
+   правое = столбцы 2-3. big = птичка (большая пуговица), small = яйцо (маленькая).
    --------------------------------------------------------------------------- */
-const STAIN_ORDER = ["yellow", "cyan", "red", "green", "blue"];
+const WINDOW_PATTERN = { 1: "big", 3: "small", 4: "big", 6: "big", 7: "small" };
+
+/* -----------------------------------------------------------------------------
+   ГОЛОВОЛОМКА 4 — пятна (подсказка на изголовье -> крышка тумбочки)
+   Порядок = цвета человечков на изголовье слева направо.
+   STAIN_POS — центры пятен на крупном плане тумбочки (доля ширины/высоты).
+   --------------------------------------------------------------------------- */
+const STAIN_ORDER = ["red", "blue", "green", "cyan", "yellow"];
 const STAIN_POS = {
-  blue:   [0.33, 0.40],
-  red:    [0.72, 0.34],
-  cyan:   [0.31, 0.62],
-  green:  [0.55, 0.44],
-  yellow: [0.64, 0.66],
+  red:    [0.768, 0.309],
+  blue:   [0.345, 0.343],
+  green:  [0.555, 0.381],
+  cyan:   [0.300, 0.546],
+  yellow: [0.670, 0.563],
 };
+
+/* -----------------------------------------------------------------------------
+   ГОЛОВОЛОМКА 5 — стол с фишками
+   Строки сверху вниз, столбцы 1..4.
+   «олень поровнялся с котом, но его глаз отпал и укатился, смотрев на цветок,
+   опережающий его»  ->  кот 2, олень 2, цветок 4, глаз 3.
+   --------------------------------------------------------------------------- */
+const TABLE_ROWS = [
+  { id: "flower", label: "цветок", glyph: "🌸", color: "#d97aa8" },
+  { id: "cat",    label: "кот",    glyph: "🐱", color: "#e0a04a" },
+  { id: "eye",    label: "глаз",   glyph: "👁️", color: "#5f9fd6" },
+  { id: "deer",   label: "олень",  glyph: "🦌", color: "#7fae5a" },
+];
+const TABLE_SOLUTION = { cat: 2, deer: 2, flower: 4, eye: 3 };
+const TABLE_NOTE = "олень поровнялся с котом, но его глаз отпал и укатился, смотрев на цветок, опережающий его";
+
+/* -----------------------------------------------------------------------------
+   ГОЛОВОЛОМКА 6 — карта мира + булавка
+   Фото: человек стоит между маяком (слева) и мельницей (справа). Правильная
+   точка — середина между ними на карте. Координаты — доли ширины/высоты карты.
+   --------------------------------------------------------------------------- */
+const MAP_LANDMARKS = [
+  { id: "lighthouse", x: 0.30, y: 0.38 },
+  { id: "windmill",   x: 0.46, y: 0.50 },
+  { id: "pyramid",    x: 0.60, y: 0.40 },
+  { id: "palm",       x: 0.78, y: 0.62 },
+  { id: "tower",      x: 0.17, y: 0.64 },
+  { id: "castle",     x: 0.72, y: 0.24 },
+];
+const MAP_TARGET = { x: 0.38, y: 0.44, r: 0.06 };
 
 /* -----------------------------------------------------------------------------
    СОСТОЯНИЕ (единый мутируемый объект)
@@ -73,28 +117,41 @@ const STAIN_POS = {
    inv        — массив id предметов в инвентаре
    selected   — id предмета «в руке» либо null
    f          — флаги прогресса всех головоломок / забранных предметов
-   *Input     — временный ввод последовательностей (сбрасывается при ошибке)
+   lock       — true, пока идёт скриптовая анимация (клики игнорируются)
+   остальное  — временный ввод последовательностей (сбрасывается при ошибке)
    --------------------------------------------------------------------------- */
 const S = {
   view: "wall0",
   wallIndex: 0,
   inv: [],
   selected: null,
+  lock: false,
   f: {
     morse: false, knife: false,
-    fridgeOpen: false, glass: false, aniline: false,
-    roller: false, rollerIn: false, phono: false, tea: false,
-    drawerOpen: false, bulb: false, planted: false,
-    quilt: false, toy: false, heart: false,
-    mixDone: false, mix: { heart: false, aniline: false, tea: false },
-    poured: false, grown: false, cut: false, brokenOff: false, sap: false,
-    handkerchief: false, wet: false,
-    headboard: false, stains: false, screwdriver: false,
-    mirrorCracked: false, shard: false, done: false,
+    drawerOpen: false, bulb: false,
+    fridgeOpen: false, ice: false, glass: false, aniline: false,
+    roller: false, phono: false, teaFell: false, tea: false,
+    planted: false,
+    quilt: false, heart: false,
+    mixGlass: false, mix: { heart: false, aniline: false, tea: false }, mixDone: false,
+    grown: false, cut: false, brokenOff: false, sap: false,
+    napkin: false, wet: false,
+    headboard: false, stains: false, photo: false,
+    mirrorStage: 0,          // 0 цело, 1 трещины, 2 осколок упал (ниша), 3 трещин нет, пазл виден
+    puzzle: false, mirrorDoor: false, doorOpen: false, mirrorReset: false,
+    hole: false, map: false, mapHung: false,
+    tableSolved: false, noteDone: false, wire: false,
+    projectorWired: false, projectorOpen: false, key: false,
+    switchFixed: false, lightOff: false, pin: false,
+    done: false,
   },
+  bootFill: null,            // 'yellow' | 'brown' | null — что сейчас плещется в сапоге
   morseInput: [],
-  quiltInput: [],
+  fridgeCode: [0, 0, 0, 0],  // индексы букв на барабанах замка
+  quiltBeads: {},            // ячейка -> 'big' | 'small'
   stainInput: [],
+  tablePos: { flower: 1, cat: 1, eye: 1, deer: 1 },
+  pinMarks: [],              // неудачные уколы булавкой по карте
 };
 
 /* Порядок обхода стен по кругу (стрелки ← / →). */
